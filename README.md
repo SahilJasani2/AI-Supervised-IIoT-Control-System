@@ -1,6 +1,6 @@
 # AI-Powered IIoT Predictive Maintenance Stack
 
-A complete, Docker-based IIoT data pipeline that simulates real-time sensor data from an industrial motor, processes it, and uses an AI model to detect anomalies on a live dashboard. This project serves as a template for building localized, intelligent predictive maintenance systems.
+A complete, Docker-based IIoT data pipeline that simulates real-time sensor data, uses an AI model to detect anomalies, and automatically triggers a control action. This project serves as a template for building localized, intelligent, closed-loop control systems for industrial automation.
 
 ## Final Dashboard
 
@@ -9,14 +9,14 @@ The final Grafana dashboard provides a real-time view of the motor's key perform
 ## Features
 
 - **Real-time Data Simulation**: A Python script simulates a motor's RPM, temperature, and vibration, including a gradually developing fault.
-- **End-to-End Data Pipeline**: Data flows from a publisher script to an MQTT broker, is captured by a subscriber script, and stored in a time-series database.
 - **AI-Powered Anomaly Detection**: Deploys a PyTorch-based Autoencoder model that learns normal motor behavior to detect anomalies in real-time, simulating an Edge AI / Digital Twin scenario.
-- **Live Dashboard**: A Grafana dashboard provides a real-time, visual representation of the motor's health and operational status.
-- **Fully Containerized**: The entire stack—including the AI-powered Python scripts, broker, database, and dashboard—is managed by Docker Compose for one-command startup.
+- **Closed-Loop Control**: When an anomaly is detected, the system automatically publishes a command to an MQTT topic, simulating a real-world control action (e.g., telling a PLC to enter a safe mode).
+- **Live Monitoring Dashboard**: A Grafana dashboard provides a visual representation of the motor's health and operational status.
+- **Fully Containerized**: The entire stack—including the AI model, control logic, broker, database, and dashboard—is managed by Docker Compose for one-command startup.
 
 ## Tech Stack
 
-- **AI & Data Processing**: Python
+- **AI & Control Logic**: Python
   - **AI Modeling**: PyTorch, Scikit-learn
   - **Messaging**: paho-mqtt
   - **Database Client**: influxdb-client
@@ -27,13 +27,13 @@ The final Grafana dashboard provides a real-time view of the motor's key perform
 
 ## Use Case
 
-### AI-Powered Predictive Maintenance (Digital Twin)
+### AI-Powered Closed-Loop Control
 
-Imagine a factory floor with critical motors running production lines. Instead of waiting for a motor to fail unexpectedly—causing costly downtime—this system provides an intelligent monitoring solution.
+This project demonstrates a complete "monitor -> detect -> act" loop, a core pattern in industrial automation.
 
-The system uses an unsupervised neural network (an Autoencoder) to create a "digital twin" of the motor's healthy operational state. The model learns the complex patterns of normal behavior from an initial dataset. During live operation, it continuously compares real-time sensor data to this learned model.
+The system uses an unsupervised neural network (an Autoencoder) to create a "digital twin" of a motor's healthy state. During live operation, it continuously compares real-time sensor data to this learned model.
 
-When live data deviates significantly from the healthy baseline, the system flags it as a potential anomaly. This approach is more robust and adaptive than simple thresholding and represents a core concept in Industry 4.0. The Grafana dashboard provides operators with a clear, immediate alert, allowing maintenance to be scheduled proactively before a critical failure occurs.
+When the AI detects a significant deviation (an anomaly), it doesn't just raise an alarm. It automatically publishes a command, such as `{"action": "enter_safe_mode"}`, to a control topic. A separate controller service, simulating an interface to a PLC, subscribes to this topic and executes the command. This closes the loop, transforming the system from a passive monitor into an active, intelligent control agent.
 
 ## Project Structure
 
@@ -47,10 +47,11 @@ iiot_project/
 │   ├── train_model.py         # Script to train the AI model
 │   ├── publisher.py           # Live data simulation and AI inference
 │   ├── subscriber.py          # Data ingestion to database
+│   ├── controller.py          # Simulated PLC/control action listener
 │   ├── requirements.txt
-│   ├── healthy_motor_data.csv # Generated training data
-│   ├── model.pth              # The trained PyTorch model
-│   └── scaler.gz              # The data scaler for preprocessing
+│   ├── healthy_motor_data.csv
+│   ├── model.pth
+│   └── scaler.gz
 ├── docker-compose.yml
 └── Dockerfile
 ```
