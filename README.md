@@ -1,53 +1,56 @@
 # AI-Powered IIoT Predictive Maintenance Stack
 
-A complete, Docker-based IIoT data pipeline that simulates real-time sensor data, uses an AI model to detect anomalies, and automatically triggers a control action. This project serves as a template for building localized, intelligent, closed-loop control systems for industrial automation.
+A complete, Docker-based IIoT data pipeline that uses advanced state estimation (EKF) and an AI model to detect anomalies from noisy sensor data and automatically trigger a control action. This project is a template for building robust, intelligent, closed-loop control systems for industrial automation.
 
 ## Final Dashboard
 
-The final Grafana dashboard provides a real-time view of the motor's key performance indicators and an immediate visual alert for AI-detected anomalies.
+The final Grafana dashboard provides a real-time view of the motor's health, the EKF's performance in filtering sensor noise, and an immediate visual alert for AI-detected anomalies.
 
 ## Features
 
-- **Real-time Data Simulation**: A Python script simulates a motor's RPM, temperature, and vibration, including a gradually developing fault.
-- **AI-Powered Anomaly Detection**: Deploys a PyTorch-based Autoencoder model that learns normal motor behavior to detect anomalies in real-time, simulating an Edge AI / Digital Twin scenario.
+- **Realistic Data Simulation**: Simulates a motor's operational data, including a non-linear degradation process and realistic sensor noise.
+- **Advanced State Estimation (EKF)**: Implements an Extended Kalman Filter to estimate the motor's true state from noisy sensor data, providing a robust, clean signal for the AI model.
+- **AI-Powered Anomaly Detection**: Deploys a PyTorch-based Autoencoder model that acts as a Digital Twin, learning normal motor behavior to detect anomalies in the filtered data.
 - **Closed-Loop Control**: When an anomaly is detected, the system automatically publishes a command to an MQTT topic, simulating a real-world control action (e.g., telling a PLC to enter a safe mode).
-- **Live Monitoring Dashboard**: A Grafana dashboard provides a visual representation of the motor's health and operational status.
-- **Fully Containerized**: The entire stack—including the AI model, control logic, broker, database, and dashboard—is managed by Docker Compose for one-command startup.
+- **Fully Containerized**: The entire stack—including the EKF, AI model, control logic, broker, database, and dashboard—is managed by Docker Compose for one-command startup.
 
 ## Tech Stack
 
 - **AI & Control Logic**: Python
+  - **State Estimation**: NumPy (for EKF)
   - **AI Modeling**: PyTorch, Scikit-learn
   - **Messaging**: paho-mqtt
-  - **Database Client**: influxdb-client
 - **Infrastructure**: Docker & Docker Compose
 - **Messaging Broker**: Mosquitto (MQTT)
-- **Database**: InfluxDB (Time-Series DB)
+- **Database**: InfluxDB
 - **Visualization**: Grafana
 
 ## Use Case
 
-### AI-Powered Closed-Loop Control
+### Robust, AI-Powered Closed-Loop Control
 
-This project demonstrates a complete "monitor -> detect -> act" loop, a core pattern in industrial automation.
+This project demonstrates a complete "filter -> detect -> act" loop, a core pattern for robust industrial automation.
 
-The system uses an unsupervised neural network (an Autoencoder) to create a "digital twin" of a motor's healthy state. During live operation, it continuously compares real-time sensor data to this learned model.
+Real-world industrial sensors are noisy. This system first addresses this challenge by using an Extended Kalman Filter (EKF) to process the raw, noisy vibration data. The EKF produces a clean, stable estimate of the motor's true state.
 
-When the AI detects a significant deviation (an anomaly), it doesn't just raise an alarm. It automatically publishes a command, such as `{"action": "enter_safe_mode"}`, to a control topic. A separate controller service, simulating an interface to a PLC, subscribes to this topic and executes the command. This closes the loop, transforming the system from a passive monitor into an active, intelligent control agent.
+This clean, estimated data is then fed to an unsupervised neural network (an Autoencoder) that acts as a "digital twin" of the motor's healthy state. When the AI detects a significant deviation from normal behavior, it triggers a control action by publishing a command to an MQTT topic. A separate controller service, simulating an interface to a PLC, executes this command, closing the loop and transforming the system into an active, intelligent, and noise-tolerant control agent.
 
 ## Project Structure
 
 ```
 iiot_project/
+├── .github/
+│   └── workflows/
+│       └── ci-pipeline.yml
 ├── mosquitto/
 │   └── config/
 │       └── mosquitto.conf
 ├── src/
-│   ├── generate_data.py       # Script to create the training dataset
-│   ├── train_model.py         # Script to train the AI model
-│   ├── publisher.py           # Live data simulation and AI inference
-│   ├── subscriber.py          # Data ingestion to database
-│   ├── controller.py          # Simulated PLC/control action listener
+│   ├── generate_data.py
+│   ├── train_model.py
+│   ├── publisher.py
+│   ├── subscriber.py
+│   ├── controller.py
 │   ├── requirements.txt
 │   ├── healthy_motor_data.csv
 │   ├── model.pth
