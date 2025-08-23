@@ -10,15 +10,15 @@ import joblib
 # --- AI Model Configuration ---
 MODEL_FILE = 'model.pth'
 SCALER_FILE = 'scaler.gz'
-# This threshold was determined by the train_model.py script
 ANOMALY_THRESHOLD = 0.122610 
 
 # --- MQTT Configuration ---
 MQTT_BROKER_HOST = "mosquitto"
 MQTT_BROKER_PORT = 1883
-MQTT_TOPIC = "iiot/motor1/data"
+MQTT_DATA_TOPIC = "iiot/motor1/data"
+MQTT_COMMAND_TOPIC = "iiot/motor1/command" # New topic for control commands
 
-# --- AI Model Definition (must match the training script) ---
+# --- AI Model Definition ---
 class Autoencoder(nn.Module):
     def __init__(self, input_dim):
         super(Autoencoder, self).__init__()
@@ -38,21 +38,19 @@ print("--- Loading AI Model and Scaler ---")
 try:
     model = Autoencoder(input_dim=3)
     model.load_state_dict(torch.load(MODEL_FILE))
-    model.eval() # Set model to evaluation mode
+    model.eval()
     print("Model loaded successfully.")
     
     scaler = joblib.load(SCALER_FILE)
     print("Scaler loaded successfully.")
 except FileNotFoundError as e:
     print(f"Error loading files: {e}")
-    print("Please ensure 'model.pth' and 'scaler.gz' are in the 'src' directory.")
     exit()
 
 # --- Data Simulation ---
 vibration_base = 3.5 
 
 def get_sensor_data_and_predict():
-    """Generates sensor data and uses the AI model to detect anomalies."""
     global vibration_base
     
     # 1. Simulate new sensor data
@@ -63,18 +61,11 @@ def get_sensor_data_and_predict():
     
     # 2. Perform AI Inference
     with torch.no_grad():
-        # Prepare data for the model (must be in the same format as training)
         raw_data = np.array([[rpm, temperature, vibration]], dtype='float32')
         scaled_data = scaler.transform(raw_data)
         data_tensor = torch.from_numpy(scaled_data)
-        
-        # Get the model's reconstruction
         reconstruction = model(data_tensor)
-        
-        # Calculate the reconstruction error
         error = nn.MSELoss()(reconstruction, data_tensor).item()
-        
-        # Check if the error exceeds our threshold
         anomaly = 1 if error > ANOMALY_THRESHOLD else 0
 
     # 3. Package the data for publishing
@@ -83,7 +74,7 @@ def get_sensor_data_and_predict():
         "rpm": round(rpm, 2),
         "temperature": round(temperature, 2),
         "vibration": round(vibration, 2),
-        "reconstruction_error": round(error, 6), # Also send the error value
+        "reconstruction_error": round(error, 6),
         "anomaly": anomaly
     }
     return data
@@ -113,12 +104,15 @@ try:
     while True:
         payload = get_sensor_data_and_predict()
         json_payload = json.dumps(payload)
-        result = client.publish(MQTT_TOPIC, json_payload)
-        
-        if result[0] == 0:
-            print(f"Published data: {json_payload}")
-        else:
-            print(f"Failed to publish message.")
+        # Publish the sensor data
+        client.publish(MQTT_DATA_TOPIC, json_payload)
+        print(f"Published data: {json_payload}")
+
+        # If an anomaly is detected, publish a command
+        if payload['anomaly'] == 1:
+            command_payload = json.dumps({"action": "enter_safe_mode"})
+            client.publish(MQTT_COMMAND_TOPIC, command_payload)
+            print(f"--> ANOMALY DETECTED! Published command: {command_payload}")
         
         time.sleep(2)
 
@@ -126,4 +120,3 @@ except KeyboardInterrupt:
     print("\nStopping publisher.")
     client.loop_stop()
     client.disconnect()
-

@@ -14,9 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/model.pth .
 COPY src/scaler.gz .
 
-# Copy BOTH scripts into the container
+# Copy ALL scripts into the container
 COPY src/publisher.py .
 COPY src/subscriber.py .
+COPY src/controller.py .
 
 # Run publisher.py by default when the container launches
 CMD ["python", "-u", "publisher.py"]

@@ -20,12 +20,12 @@ services:
     volumes:
       - influxdb2_data:/var/lib/influxdb2
     environment:
-      - DOCKER_INFLUDB_INIT_MODE=setup
-      - DOCKER_INFLUDB_INIT_USERNAME=admin
-      - DOCKER_INFLUDB_INIT_PASSWORD=password123
-      - DOCKER_INFLUDB_INIT_ORG=iiot
-      - DOCKER_INFLUDB_INIT_BUCKET=iiot-bucket
-      - DOCKER_INFLUDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password123
+      - DOCKER_INFLUXDB_INIT_ORG=iiot
+      - DOCKER_INFLUXDB_INIT_BUCKET=iiot-bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
     networks:
       - iiot-net
 
@@ -52,12 +52,22 @@ services:
       - iiot-net
 
   subscriber:
-    build: .  
+    build: .
     container_name: subscriber
-    command: ["python", "-u", "subscriber.py"] 
+    command: ["python", "-u", "subscriber.py"]
     depends_on:
       - mosquitto
       - influxdb
+    restart: on-failure
+    networks:
+      - iiot-net
+  
+  controller:
+    build: .
+    container_name: controller
+    command: ["python", "-u", "controller.py"]
+    depends_on:
+      - mosquitto
     restart: on-failure
     networks:
       - iiot-net
