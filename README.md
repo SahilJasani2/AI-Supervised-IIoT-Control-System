@@ -1,4 +1,4 @@
-# IIoT Predictive Maintenance Stack
+# IIoT Predictive Stack
 
 A complete, Docker-based IIoT data pipeline that simulates real-time sensor data from an industrial motor, processes it, and visualizes it on a live dashboard. This project serves as a template for building localized predictive maintenance and industrial monitoring systems.
 

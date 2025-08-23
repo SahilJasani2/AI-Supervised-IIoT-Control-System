@@ -10,6 +10,10 @@ COPY src/requirements.txt .
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy the trained model and scaler into the container
+COPY src/model.pth .
+COPY src/scaler.gz .
+
 # Copy BOTH scripts into the container
 COPY src/publisher.py .
 COPY src/subscriber.py .
