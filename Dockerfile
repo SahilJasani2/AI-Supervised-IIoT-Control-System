@@ -10,8 +10,9 @@ COPY src/requirements.txt .
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the publisher script into the container
+# Copy BOTH scripts into the container
 COPY src/publisher.py .
+COPY src/subscriber.py .
 
-# Run publisher.py when the container launches
+# Run publisher.py by default when the container launches
 CMD ["python", "-u", "publisher.py"]

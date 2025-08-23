@@ -4,13 +4,13 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 import json
 
 # --- InfluxDB Configuration ---
-INFLUX_URL = "http://localhost:8086"
-INFLUX_TOKEN = "my-super-secret-auth-token"  # The token from your docker-compose.yml
+INFLUX_URL = "http://influxdb:8086"
+INFLUX_TOKEN = "my-super-secret-auth-token"
 INFLUX_ORG = "iiot"
 INFLUX_BUCKET = "iiot-bucket"
 
 # --- MQTT Configuration ---
-MQTT_BROKER_HOST = "localhost" # We are running this script on our machine, not in a container
+MQTT_BROKER_HOST = "mosquitto"
 MQTT_BROKER_PORT = 1883
 MQTT_TOPIC = "iiot/motor1/data"
 
@@ -28,24 +28,19 @@ def on_connect(client, userdata, flags, rc):
         print(f"Failed to connect, return code {rc}")
 
 def on_message(client, userdata, msg):
-    """Processes messages received from the MQTT broker."""
     try:
-        # Decode the message payload from bytes to a string
         payload_str = msg.payload.decode('utf-8')
-        # Parse the JSON string into a Python dictionary
         data = json.loads(payload_str)
-
+        
         print(f"Received message: {data}")
 
-        # Create an InfluxDB Point
         point = Point("motor_data") \
             .tag("motor_id", "motor1") \
             .field("rpm", data.get("rpm")) \
             .field("temperature", data.get("temperature")) \
             .field("vibration", data.get("vibration")) \
-            .time(int(data.get("timestamp") * 1_000_000_000)) # InfluxDB needs nanoseconds
+            .time(int(data.get("timestamp") * 1_000_000_000))
 
-        # Write the point to InfluxDB
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
         print("Successfully wrote data to InfluxDB.")
 
@@ -61,7 +56,6 @@ mqtt_client.on_message = on_message
 
 try:
     mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
-    # loop_forever() is a blocking call that handles reconnection automatically
     mqtt_client.loop_forever()
 except KeyboardInterrupt:
     print("Subscriber stopped by user.")
