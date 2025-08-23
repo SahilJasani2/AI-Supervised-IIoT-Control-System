@@ -54,4 +54,4 @@ jobs:
 
       # Step 2: Build the Docker images to verify everything is configured correctly
       - name: Build Docker images
-        run: docker-compose build
+        run: docker compose build
