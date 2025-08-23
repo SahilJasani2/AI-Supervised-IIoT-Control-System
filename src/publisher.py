@@ -12,17 +12,32 @@ MQTT_TOPIC = "iiot/motor1/data"
 vibration_base = 3.5 
 
 def get_sensor_data():
+    """Simulates reading data and adds a simple anomaly detection rule."""
     global vibration_base
+    
+    # Simulate normal RPM and Temperature fluctuations
     rpm = 700 + random.uniform(-20, 20)
     temperature = 85.5 + random.uniform(-1.5, 1.5)
+    
+    # Slowly increase vibration over time
     vibration_base += 0.05 
     vibration = vibration_base + random.uniform(-0.2, 0.2)
+    
+    # --- ANOMALY DETECTION RULE ---
+    anomaly = 0 # 0 = Normal, 1 = Anomaly Detected
+    if vibration > 7.0:
+        anomaly = 1
+    
+    # Get the current timestamp
     timestamp = time.time()
+    
+    # Package the data into a dictionary (including the new anomaly field)
     data = {
         "timestamp": timestamp,
         "rpm": round(rpm, 2),
         "temperature": round(temperature, 2),
-        "vibration": round(vibration, 2)
+        "vibration": round(vibration, 2),
+        "anomaly": anomaly
     }
     return data
 

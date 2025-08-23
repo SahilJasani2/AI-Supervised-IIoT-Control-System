@@ -52,9 +52,9 @@ services:
       - iiot-net
 
   subscriber:
-    build: .  # We can reuse the same Dockerfile
+    build: .  
     container_name: subscriber
-    command: ["python", "-u", "subscriber.py"] # We override the CMD to run the subscriber script
+    command: ["python", "-u", "subscriber.py"] 
     depends_on:
       - mosquitto
       - influxdb

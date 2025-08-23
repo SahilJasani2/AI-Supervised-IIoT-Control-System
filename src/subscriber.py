@@ -28,19 +28,25 @@ def on_connect(client, userdata, flags, rc):
         print(f"Failed to connect, return code {rc}")
 
 def on_message(client, userdata, msg):
+    """Processes messages received from the MQTT broker."""
     try:
+        # Decode the message payload from bytes to a string
         payload_str = msg.payload.decode('utf-8')
+        # Parse the JSON string into a Python dictionary
         data = json.loads(payload_str)
         
         print(f"Received message: {data}")
 
+        # Create an InfluxDB Point, now including the anomaly field
         point = Point("motor_data") \
             .tag("motor_id", "motor1") \
             .field("rpm", data.get("rpm")) \
             .field("temperature", data.get("temperature")) \
             .field("vibration", data.get("vibration")) \
+            .field("anomaly", data.get("anomaly")) \
             .time(int(data.get("timestamp") * 1_000_000_000))
 
+        # Write the point to InfluxDB
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
         print("Successfully wrote data to InfluxDB.")
 
