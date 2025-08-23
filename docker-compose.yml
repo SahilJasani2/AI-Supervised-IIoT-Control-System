@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt_broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - iiot-net
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb2_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUDB_INIT_MODE=setup
+      - DOCKER_INFLUDB_INIT_USERNAME=admin
+      - DOCKER_INFLUDB_INIT_PASSWORD=password123
+      - DOCKER_INFLUDB_INIT_ORG=iiot
+      - DOCKER_INFLUDB_INIT_BUCKET=iiot-bucket
+      - DOCKER_INFLUDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
+    networks:
+      - iiot-net
+
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    networks:
+      - iiot-net
+
+  publisher:
+    build: .
+    container_name: publisher
+    depends_on:
+      - mosquitto
+    restart: on-failure
+    networks:
+      - iiot-net
+
+volumes:
+  influxdb2_data:
+  grafana_data:
+
+networks:
+  iiot-net:
+    driver: bridge
