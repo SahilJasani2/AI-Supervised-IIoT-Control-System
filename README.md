@@ -1,24 +1,25 @@
-# IIoT Predictive Stack
+# AI-Powered IIoT Predictive Maintenance Stack
 
-A complete, Docker-based IIoT data pipeline that simulates real-time sensor data from an industrial motor, processes it, and visualizes it on a live dashboard. This project serves as a template for building localized predictive maintenance and industrial monitoring systems.
+A complete, Docker-based IIoT data pipeline that simulates real-time sensor data from an industrial motor, processes it, and uses an AI model to detect anomalies on a live dashboard. This project serves as a template for building localized, intelligent predictive maintenance systems.
 
 ## Final Dashboard
 
-The final Grafana dashboard provides a real-time view of the motor's key performance indicators and an immediate visual alert for detected anomalies.
+The final Grafana dashboard provides a real-time view of the motor's key performance indicators and an immediate visual alert for AI-detected anomalies.
 
 ## Features
 
 - **Real-time Data Simulation**: A Python script simulates a motor's RPM, temperature, and vibration, including a gradually developing fault.
 - **End-to-End Data Pipeline**: Data flows from a publisher script to an MQTT broker, is captured by a subscriber script, and stored in a time-series database.
+- **AI-Powered Anomaly Detection**: Deploys a PyTorch-based Autoencoder model that learns normal motor behavior to detect anomalies in real-time, simulating an Edge AI / Digital Twin scenario.
 - **Live Dashboard**: A Grafana dashboard provides a real-time, visual representation of the motor's health and operational status.
-- **Rule-Based Anomaly Detection**: A simple predictive maintenance model flags data points as anomalies when vibration exceeds a predefined threshold.
-- **Fully Containerized**: The entire stack—including the Python scripts, broker, database, and dashboard—is managed by Docker Compose for one-command startup and shutdown.
+- **Fully Containerized**: The entire stack—including the AI-powered Python scripts, broker, database, and dashboard—is managed by Docker Compose for one-command startup.
 
 ## Tech Stack
 
-- **Data Simulation & Processing**: Python
-  - `paho-mqtt` for messaging
-  - `influxdb-client` for database communication
+- **AI & Data Processing**: Python
+  - **AI Modeling**: PyTorch, Scikit-learn
+  - **Messaging**: paho-mqtt
+  - **Database Client**: influxdb-client
 - **Infrastructure**: Docker & Docker Compose
 - **Messaging Broker**: Mosquitto (MQTT)
 - **Database**: InfluxDB (Time-Series DB)
@@ -26,11 +27,13 @@ The final Grafana dashboard provides a real-time view of the motor's key perform
 
 ## Use Case
 
-### Predictive Maintenance for Industrial Motors
+### AI-Powered Predictive Maintenance (Digital Twin)
 
-Imagine a factory floor with dozens of critical motors running conveyor belts or pumps. Instead of waiting for a motor to fail unexpectedly—causing costly downtime—this system can monitor the health of each motor in real time.
+Imagine a factory floor with critical motors running production lines. Instead of waiting for a motor to fail unexpectedly—causing costly downtime—this system provides an intelligent monitoring solution.
 
-By tracking key metrics like vibration, the system can detect early signs of wear and tear (e.g., a failing bearing). The Grafana dashboard provides operators with a clear view of a motor's status. When the "Motor Health Status" panel turns red, maintenance can be scheduled proactively, before a critical failure occurs, saving time and money.
+The system uses an unsupervised neural network (an Autoencoder) to create a "digital twin" of the motor's healthy operational state. The model learns the complex patterns of normal behavior from an initial dataset. During live operation, it continuously compares real-time sensor data to this learned model.
+
+When live data deviates significantly from the healthy baseline, the system flags it as a potential anomaly. This approach is more robust and adaptive than simple thresholding and represents a core concept in Industry 4.0. The Grafana dashboard provides operators with a clear, immediate alert, allowing maintenance to be scheduled proactively before a critical failure occurs.
 
 ## Project Structure
 
@@ -40,9 +43,14 @@ iiot_project/
 │   └── config/
 │       └── mosquitto.conf
 ├── src/
-│   ├── publisher.py
-│   ├── subscriber.py
-│   └── requirements.txt
+│   ├── generate_data.py       # Script to create the training dataset
+│   ├── train_model.py         # Script to train the AI model
+│   ├── publisher.py           # Live data simulation and AI inference
+│   ├── subscriber.py          # Data ingestion to database
+│   ├── requirements.txt
+│   ├── healthy_motor_data.csv # Generated training data
+│   ├── model.pth              # The trained PyTorch model
+│   └── scaler.gz              # The data scaler for preprocessing
 ├── docker-compose.yml
 └── Dockerfile
 ```
