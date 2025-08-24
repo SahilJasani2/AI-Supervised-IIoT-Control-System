@@ -65,7 +65,6 @@ async def main():
     # --- Main Loop with OPC UA Client ---
     url = OPCUA_SERVER_URL
     
-    # --- FIXED: Add a retry loop to handle server startup timing ---
     client = Client(url=url)
     max_retries = 5
     for attempt in range(max_retries):
@@ -78,19 +77,27 @@ async def main():
             if attempt + 1 == max_retries:
                 print("Could not connect to OPC UA server. Exiting.")
                 return
-            await asyncio.sleep(5) # Wait 5 seconds before retrying
+            await asyncio.sleep(5)
 
     try:
         nsidx = await client.get_namespace_index(OPCUA_NAMESPACE)
         speed_node = await client.nodes.root.get_child(["0:Objects", f"{nsidx}:Motor1", f"{nsidx}:CurrentSpeed"])
         voltage_node = await client.nodes.root.get_child(["0:Objects", f"{nsidx}:Motor1", f"{nsidx}:OutputVoltage"])
+        # --- NEW: Get the setpoint node ---
+        setpoint_node = await client.nodes.root.get_child(["0:Objects", f"{nsidx}:Motor1", f"{nsidx}:SpeedSetpoint"])
 
         while True:
+            # 1. Read the latest voltage AND setpoint from the OPC UA server
             latest_voltage = await voltage_node.get_value()
+            latest_setpoint = await setpoint_node.get_value()
+
+            # 2. Update the motor simulation
             motor_state = motor.update_state(voltage=latest_voltage)
-            # --- FIXED: Ensure the value written is always a float ---
+
+            # 3. Write the new speed back to the OPC UA server
             await speed_node.write_value(float(motor_state["speed"]))
 
+            # 4. Perform AI Inference
             with torch.no_grad():
                 raw_data = np.array([[motor_state["ekf_vibration"], motor_state["ekf_temperature"]]], dtype='float32')
                 scaled_data = scaler.transform(raw_data)
@@ -99,6 +106,7 @@ async def main():
                 error = nn.MSELoss()(reconstruction, data_tensor).item()
                 anomaly = 1 if error > ANOMALY_THRESHOLD else 0
             
+            # 5. Package and publish all data, now including the setpoint
             payload = {
                 "timestamp": time.time(),
                 "true_vibration": round(motor_state["true_vibration"], 4),
@@ -108,6 +116,7 @@ async def main():
                 "noisy_temperature": round(motor_state["noisy_temperature"], 2),
                 "ekf_temperature": round(motor_state["ekf_temperature"], 2),
                 "speed": round(motor_state["speed"], 2),
+                "setpoint": round(latest_setpoint, 2), # --- NEW: Add setpoint to payload ---
                 "reconstruction_error": round(error, 6),
                 "anomaly": anomaly
             }
@@ -115,6 +124,7 @@ async def main():
             
             print(f"OPC Loop: Read Voltage={latest_voltage:.2f}, Wrote Speed={payload['speed']:.2f} | AI Error={payload['reconstruction_error']:.4f}")
 
+            # 6. If AI detects an anomaly, publish the supervisory command
             if payload['anomaly'] == 1:
                 command_payload = json.dumps({"action": "enter_safe_mode"})
                 mqtt_client.publish(MQTT_AI_COMMAND_TOPIC, command_payload)

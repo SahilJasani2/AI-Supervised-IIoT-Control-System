@@ -35,16 +35,19 @@ def on_message(client, userdata, msg):
         
         print(f"Received message: {data}")
 
-        # Create an InfluxDB Point with all the new vibration fields
+        # --- FIXED: Explicitly cast all numeric fields to float to prevent type conflicts ---
         point = Point("motor_data") \
             .tag("motor_id", "motor1") \
-            .field("rpm", data.get("rpm")) \
-            .field("temperature", data.get("temperature")) \
-            .field("true_vibration", data.get("true_vibration")) \
-            .field("noisy_vibration", data.get("noisy_vibration")) \
-            .field("ekf_vibration", data.get("ekf_vibration")) \
-            .field("reconstruction_error", data.get("reconstruction_error")) \
-            .field("anomaly", data.get("anomaly")) \
+            .field("true_vibration", float(data.get("true_vibration", 0.0))) \
+            .field("noisy_vibration", float(data.get("noisy_vibration", 0.0))) \
+            .field("ekf_vibration", float(data.get("ekf_vibration", 0.0))) \
+            .field("true_temperature", float(data.get("true_temperature", 0.0))) \
+            .field("noisy_temperature", float(data.get("noisy_temperature", 0.0))) \
+            .field("ekf_temperature", float(data.get("ekf_temperature", 0.0))) \
+            .field("speed", float(data.get("speed", 0.0))) \
+            .field("setpoint", float(data.get("setpoint", 0.0))) \
+            .field("reconstruction_error", float(data.get("reconstruction_error", 0.0))) \
+            .field("anomaly", int(data.get("anomaly", 0))) \
             .time(int(data.get("timestamp") * 1_000_000_000))
 
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
