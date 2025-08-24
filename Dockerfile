@@ -18,6 +18,8 @@ COPY src/scaler.gz .
 COPY src/publisher.py .
 COPY src/subscriber.py .
 COPY src/controller.py .
+COPY src/motor_model.py .
+
 
 # Run publisher.py by default when the container launches
 CMD ["python", "-u", "publisher.py"]
