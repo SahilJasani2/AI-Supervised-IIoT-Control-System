@@ -46,7 +46,8 @@ def on_ai_command(client, userdata, msg):
         print(f"An error occurred in on_ai_command: {e}")
 
 async def main():
-    global opcua_server, opcua_idx, opcua_current_speed_node, opcua_setpoint_node, opcua_voltage_node
+    # --- FIXED: The 'global' keyword is not needed here and was causing a linting error ---
+    global opcua_idx, opcua_current_speed_node, opcua_setpoint_node, opcua_voltage_node
 
     print("--- Starting OPC UA Server and PID Controller ---")
 
