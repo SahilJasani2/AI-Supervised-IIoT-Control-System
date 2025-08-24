@@ -4,3 +4,4 @@ torch
 scikit-learn
 numpy
 simple-pid==2.0.0
+asyncua==1.0.5
